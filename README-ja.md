@@ -177,8 +177,16 @@ resource "p2pub_global_ip_address" "ip1" {
 |-|-|-|-|
 |```type```|FW+LB 専有タイプ品目||◯|
 |```redundant```|冗長構成有無|"Yes" "No"|◯|
-|```external_type```|ネットワーク種別|"Global", "PrivateStandard"|◯|
-|```internal_type```|ネットワーク種別|"PrivateStandard"|◯|
+|```external_type```|ネットワーク種別|"Global", "PrivateStandard", "Private"|◯|
+|```external_servicecode```|サービスコード|ivlServicecode||
+|```external_masterhost_address```|マスターホストのアドレス|ipaddr||
+|```external_slavehost_address```|スレーブホストのアドレス|ipaddr||
+|```external_netmask```|ネットマスク|mask||
+|```internal_type```|ネットワーク種別|"PrivateStandard", "Private"|◯|
+|```internal_servicecode```|サービスコード|ivlServicecode||
+|```internal_masterhost_address```|マスターホストのアドレス|ipaddr||
+|```internal_slavehost_address```|スレーブホストのアドレス|ipaddr||
+|```internal_netmask```|ネットマスク|mask||
 |```trafficip_list```|トラフィックIPの一覧|配列|◯|
 |```trafficip_list.ipv4_name```|トラフィックIPの名前|"文字列"|◯|
 |```filter_in_list```|ファイアウォールのルール一覧（IN）|配列||

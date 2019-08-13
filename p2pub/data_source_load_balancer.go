@@ -40,12 +40,41 @@ func dataSourceLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"external_trafficip_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"external_masterhost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"external_slavehost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"external_netmask": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// PrivateStandard, Private
 			"internal_type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
 			"internal_trafficip_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"internal_masterhost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"internal_slavehost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"internal_netmask": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -116,6 +145,30 @@ func dataSourceLoadBalancer() *schema.Resource {
 					},
 				},
 				Computed: true,
+			},
+			"static_route_list": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"static_route_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"destination": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"gateway": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"servicecode": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				Optional: true,
 			},
 		},
 	}

@@ -60,6 +60,25 @@ func resourceLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"external_trafficip_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"external_masterhost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"external_slavehost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"external_netmask": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// PrivateStandard, Private
 			"internal_type": &schema.Schema{
 				Type:     schema.TypeString,
@@ -69,6 +88,20 @@ func resourceLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"internal_masterhost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"internal_slavehost_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"internal_netmask": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"internal_servicecode": &schema.Schema{
 				Type:     schema.TypeString,
@@ -229,6 +262,30 @@ func resourceLoadBalancer() *schema.Resource {
 							Required: true,
 						},
 						"label": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				Optional: true,
+			},
+			"static_route_list": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"static_route_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"destination": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"gateway": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"servicecode": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -423,6 +480,10 @@ func updateAdminAcl(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+func updateStaticRoute(d *schema.ResourceData, m interface{}) error {
+	return nil
+}
+
 func createLoadBalancer(api *p2pubapi.API, gisServiceCode, lbType, redundant string) (string, error) {
 	args := protocol.FwLbAdd{
 		GisServiceCode: gisServiceCode,
@@ -438,6 +499,27 @@ func createLoadBalancer(api *p2pubapi.API, gisServiceCode, lbType, redundant str
 	return res.ServiceCode, nil
 }
 
+func setupLoadBalancer(api *p2pubapi.API, gis, servicecode string, data *schema.ResourceData, trafficip map[string]interface{}) error {
+	externalType := data.Get("external_type").(string)
+	internalType := data.Get("internal_type").(string)
+
+	if externalType == "Global" && internalType == "PrivateStandard" {
+		return setupLoadBalancerSimple(api, gis, servicecode, externalType, internalType, trafficip["ipv4_name"].(string))
+	}
+
+	ivlServicecode := data.Get("external_servicecode").(string)
+	ivlServicecodeInternal := data.Get("internal_servicecode").(string)
+	if externalType == "Private" && internalType == "Private" && ivlServicecode == ivlServicecodeInternal {
+		return setupLoadBalancerPrivate(api, gis, servicecode, ivlServicecode,
+			trafficip["ipv4_name"].(string), trafficip["ipv4_address"].(string),
+			data.Get("external_masterhost_address").(string),
+			data.Get("external_slavehost_address").(string),
+			data.Get("external_netmask").(string))
+	}
+
+	return fmt.Errorf("not implemented")
+}
+
 func setupLoadBalancerSimple(api *p2pubapi.API, gisServiceCode, iflServiceCode, externalType, internalType, trafficIpName string) error {
 	argsSetup := protocol.FwLbSetup{
 		GisServiceCode: gisServiceCode,
@@ -448,6 +530,36 @@ func setupLoadBalancerSimple(api *p2pubapi.API, gisServiceCode, iflServiceCode, 
 	argsSetup.External.NetworkType = externalType
 	argsSetup.Internal.NetworkType = internalType
 	argsSetup.External.TrafficIpName = trafficIpName
+	resSetup := protocol.FwLbSetupResponse{}
+
+	if err := p2pubapi.Call(*api, argsSetup, &resSetup); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// private mode, single NIC
+func setupLoadBalancerPrivate(api *p2pubapi.API, gisServiceCode, iflServiceCode, ivlServiceCode, trafficIpName, trafficIpAddress, masterHostAddress, slaveHostAddress, netmask string) error {
+	argsSetup := protocol.FwLbSetup{
+		GisServiceCode: gisServiceCode,
+		IflServiceCode: iflServiceCode,
+		ActionType:     "Setup",
+	}
+
+	argsSetup.External.NetworkType = "Private"
+	argsSetup.External.ServiceCode = ivlServiceCode
+	argsSetup.External.TrafficIpName = trafficIpName
+	argsSetup.External.TrafficIpAddress = trafficIpAddress
+	argsSetup.External.MasterHostAddress = masterHostAddress
+	argsSetup.External.SlaveHostAddress = slaveHostAddress
+	argsSetup.External.Netmask = netmask
+	argsSetup.Internal.NetworkType = "Private"
+	argsSetup.Internal.ServiceCode = ivlServiceCode
+	argsSetup.Internal.TrafficIpAddress = trafficIpAddress
+	argsSetup.Internal.MasterHostAddress = masterHostAddress
+	argsSetup.Internal.SlaveHostAddress = slaveHostAddress
+	argsSetup.Internal.Netmask = netmask
 	resSetup := protocol.FwLbSetupResponse{}
 
 	if err := p2pubapi.Call(*api, argsSetup, &resSetup); err != nil {
@@ -480,8 +592,14 @@ func resourceLoadBalancerRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("label", res.Label)
 
 	d.Set("internal_type", res.Internal.NetworkType)
-	d.Set("internal_trafficip_address", res.Internal.TrafficIpAddress)
+	if len(res.Internal.NetworkType) == 0 {
+		d.Set("internal_type", res.External.NetworkType)
+	}
 	d.Set("internal_servicecode", res.Internal.ServiceCode)
+	if len(res.Internal.ServiceCode) == 0 {
+		d.Set("internal_servicecode", res.External.ServiceCode)
+	}
+	d.Set("internal_trafficip_address", res.Internal.TrafficIpAddress)
 
 	d.Set("external_type", res.External.NetworkType)
 	d.Set("external_servicecode", res.External.ServiceCode)
@@ -515,11 +633,35 @@ func resourceLoadBalancerRead(d *schema.ResourceData, m interface{}) error {
 			"external_ipv6_address": host.External.IPv6Address,
 			"internal_ipv4_address": host.Internal.IPv4Address,
 		})
+		if host.Master == "Yes" {
+			d.Set("external_masterhost_address", host.External.IPv4Address)
+			if len(host.Internal.IPv4Address) == 0 {
+				d.Set("internal_masterhost_address", host.External.IPv4Address)
+			} else {
+				d.Set("internal_masterhost_address", host.Internal.IPv4Address)
+			}
+		} else {
+			d.Set("external_slavehost_address", host.External.IPv4Address)
+			if len(host.Internal.IPv4Address) == 0 {
+				d.Set("internal_slavehost_address", host.External.IPv4Address)
+			} else {
+				d.Set("internal_slavehost_address", host.Internal.IPv4Address)
+			}
+		}
 	}
 	d.Set("host_list", hostList)
 
 	// Snatは省略
-	// StaticRouteは省略
+	staticroute := make([]map[string]string, 0)
+	for _, route := range res.StaticRouteList {
+		staticroute = append(staticroute, map[string]string{
+			"static_route_id": route.StaticRouteId,
+			"destination":     route.Destination,
+			"gateway":         route.Gateway,
+			"servicecode":     route.ServiceCode,
+		})
+	}
+	d.Set("static_route_list", staticroute)
 
 	d.Set("filter_in_list", getFilter(api, gis, d.Id(), "in"))
 	d.Set("filter_out_list", getFilter(api, gis, d.Id(), "out"))
@@ -577,7 +719,7 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, m interface{}) error {
 	for _, t := range d.Get("trafficip_list").([]interface{}) {
 		trafficip := t.(map[string]interface{})
 		if first {
-			if err := setupLoadBalancerSimple(api, gis, servicecode, d.Get("external_type").(string), d.Get("internal_type").(string), trafficip["ipv4_name"].(string)); err != nil {
+			if err := setupLoadBalancer(api, gis, servicecode, d, trafficip); err != nil {
 				return err
 			}
 			first = false
@@ -619,20 +761,11 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	/*
-		argsSetup.External.ServiceCode = d.Get("external_servicecdoe").(string)			 // external_servicecode
-		argsSetup.External.TrafficIpAddress = d.Get("external_ipv4_address").(string)	 // trafficip_list.ipv4_address
-		argsSetup.External.Netmask = d.Get("external_ipv4_netmask").(string)             // ?
-		argsSetup.External.MasterHostAddress = d.Get("external_master_address").(string) // host_list.external_ipv4_address when master = true
-		argsSetup.External.SlaveHostAddress = d.Get("external_slave_address").(string)   // host_list.external_ipv4_address when master = false
-		argsSetup.Internal.ServiceCode = d.Get("internal_servicecdoe").(string)          // internal_servicecode
-		argsSetup.Internal.TrafficIpAddress = d.Get("internal_ipv4_address").(string)    // internal_trafficip_address
-		argsSetup.Internal.Netmask = d.Get("internal_ipv4_netmask").(string)             // ?
-		argsSetup.Internal.MasterHostAddress = d.Get("internal_master_address").(string) // host_list.interla_ipv4_address when master = true
-		argsSetup.Internal.SlaveHostAddress = d.Get("internal_slave_address").(string)   // host_list.interla_ipv4_address when master = false
-		argsSetup.Internal.TrafficIpName = d.Get("internal_trafficip_name").(string)     // ?
-	*/
-
+	if d.Get("static_route_list") != nil {
+		if err := updateStaticRoute(d, m); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

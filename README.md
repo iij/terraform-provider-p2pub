@@ -181,8 +181,16 @@ resource "p2pub_additional_storage" "additional_storage" {
 |-|-|-|-|
 |```type```|type|D10M, D100M, D150M, D1000M|o|
 |```redundant```|redundancy|"Yes" "No"|o|
-|```external_type```|network type|"Global", "PrivateStandard"|o|
-|```internal_type```|network type|"PrivateStandard"|o|
+|```external_type```|network type|"Global", "PrivateStandard", "Private"|o|
+|```external_servicecode```|network servicecode|ivlServicecode||
+|```external_masterhost_address```|address of master host|ipaddr||
+|```external_slavehost_address```|address of slave host|ipaddr||
+|```external_netmask```|netmask of host|mask||
+|```internal_type```|network type|"PrivateStandard", "Private"|o|
+|```internal_servicecode```|network servicecode|ivlServicecode||
+|```internal_masterhost_address```|address of master host|ipaddr||
+|```internal_slavehost_address```|address of slave host|ipaddr||
+|```internal_netmask```|netmask of host|mask||
 |```trafficip_list```|list of trafficips|array|o|
 |```trafficip_list.ipv4_name```|name of trafficip|string|o|
 |```filter_in_list```|rules of firewall (in)|array||
