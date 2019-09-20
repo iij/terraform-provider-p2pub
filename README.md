@@ -260,22 +260,14 @@ resource "p2pub_load_balancer" "vtm1" {
 }
 ```
 
-## Developing this provider
-
-### Build from source
-
-[dep](https://github.com/golang/dep) is required.
-
-```
-$ make build
-```
-
-
 ## References
 
 - IIJ GIO P2 Public Resource API Reference : http://manual.iij.jp/p2/pubapi/index.html
 
 
+## Authors
 
-
-Author: Shoma Ishihara (sishihara@iij.ad.jp)
+- [Shoma Ishihara](https://github.com/sishihara)
+- [keisuk-t](https://github.com/keisuk-t)
+- [Takashi WATANABE](https://github.com/wtnb-t-iij)
+- [Darmuck](https://github.com/Darmuck)
