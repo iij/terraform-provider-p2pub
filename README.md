@@ -6,11 +6,11 @@ Terraform custom provider for [IIJ GIO P2 Public Resource](https://www.iij.ad.jp
 
 ## Download
 
-Latest release: v0.4.4 (2019-08-13)
+Latest release: v0.4.5 (2019-09-20)
 
-- **Linux**: [terraform-provider-p2pub-linux-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.4/terraform-provider-p2pub-linux-amd64)
-- **Windows**: [terraform-provider-p2pub-windows-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.4/terraform-provider-p2pub-windows-amd64)
-- **MacOS**: [terraform-provider-p2pub-darwin-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.4/terraform-provider-p2pub-darwin-amd64)
+- **Linux**: [terraform-provider-p2pub-linux-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.5/terraform-provider-p2pub-linux-amd64)
+- **Windows**: [terraform-provider-p2pub-windows-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.5/terraform-provider-p2pub-windows-amd64)
+- **MacOS**: [terraform-provider-p2pub-darwin-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.5/terraform-provider-p2pub-darwin-amd64)
 
 ## Installation
 
